@@ -481,6 +481,7 @@ select.form-control option { background:#0d1225; color:var(--text); }
 .news-grid {
   display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr));
   gap:20px; max-width:1200px; margin:0 auto;
+  align-items:start;
 }
 .news-card {
   background:#0a1128; border:1px solid var(--border); border-radius:16px;
@@ -532,7 +533,8 @@ select.form-control option { background:#0d1225; color:var(--text); }
 }
 @media(max-width:768px){
   #news { padding:64px 20px; }
-  .news-grid { grid-template-columns:1fr; }
+  .news-grid { grid-template-columns:1fr; gap:16px; }
+  .news-card { padding:18px; }
 }
 
 /* ── INSTAGRAM BUTTON ── */
