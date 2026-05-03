@@ -481,13 +481,13 @@ select.form-control option { background:#0d1225; color:var(--text); }
 .news-grid {
   display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr));
   gap:20px; max-width:1200px; margin:0 auto;
-  align-items:start;
+  grid-auto-rows: auto;
 }
 .news-card {
   background:#0a1128; border:1px solid var(--border); border-radius:16px;
   padding:24px; display:flex; flex-direction:column; gap:12px;
   transition:transform 0.3s, border-color 0.3s, box-shadow 0.3s;
-  cursor:pointer; text-decoration:none;
+  cursor:pointer; text-decoration:none; height:100%;
 }
 .news-card:hover {
   transform:translateY(-4px); border-color:rgba(79,142,247,0.3);
@@ -534,7 +534,7 @@ select.form-control option { background:#0d1225; color:var(--text); }
 @media(max-width:768px){
   #news { padding:64px 20px; }
   .news-grid { grid-template-columns:1fr; gap:16px; }
-  .news-card { padding:18px; }
+  .news-card { height:auto; padding:18px; }
 }
 
 /* ── INSTAGRAM BUTTON ── */
