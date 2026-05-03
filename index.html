@@ -202,6 +202,28 @@ section {
   margin:0 0 52px; border-radius:3px;
 }
 
+.event-countdown {
+  display:flex; align-items:center; gap:6px;
+  margin:14px 0; padding:14px 16px; border-radius:12px;
+  background:rgba(79,142,247,0.06); border:1px solid rgba(79,142,247,0.15);
+}
+.countdown-block { display:flex; flex-direction:column; align-items:center; gap:2px; flex:1; }
+.countdown-num {
+  font-family:'Syne',sans-serif; font-size:1.5rem; font-weight:800;
+  color:var(--accent); line-height:1;
+}
+.countdown-label {
+  font-family:'DM Mono',monospace; font-size:0.55rem; letter-spacing:2px; color:var(--text-dim);
+}
+.countdown-sep {
+  font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800;
+  color:var(--accent); opacity:0.4; padding-bottom:12px;
+}
+.countdown-expired {
+  font-family:'DM Mono',monospace; font-size:0.72rem; letter-spacing:2px;
+  color:var(--accent3); text-align:center; width:100%;
+}
+
 /* ── EVENTS ── */
 .events-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(330px,1fr)); gap:24px; }
 
@@ -829,6 +851,15 @@ footer {
       <div class="event-date">📅 MAY 11, 2026 · 10:00 AM</div>
       <div class="event-title">TECHNOLOGY DAY 2026</div>
       <div class="event-desc">Celebrating the bridge between imagination and reality — honoring the innovators turning "what if" into "what is." A full day of demos, talks, and inspiration.</div>
+      <div class="event-countdown" id="countdown-1">
+        <div class="countdown-block"><span class="countdown-num" id="cd1-d">--</span><span class="countdown-label">DAYS</span></div>
+        <div class="countdown-sep">:</div>
+        <div class="countdown-block"><span class="countdown-num" id="cd1-h">--</span><span class="countdown-label">HRS</span></div>
+        <div class="countdown-sep">:</div>
+        <div class="countdown-block"><span class="countdown-num" id="cd1-m">--</span><span class="countdown-label">MIN</span></div>
+        <div class="countdown-sep">:</div>
+        <div class="countdown-block"><span class="countdown-num" id="cd1-s">--</span><span class="countdown-label">SEC</span></div>
+      </div>
       <div class="event-meta"><div>📍 <span>SEMINAR HALL</span></div><div>👥 <span></span></div></div>
       <a href="https://forms.gle/rxpnDxwRYCucwZQx5" target="_blank" style="text-decoration:none;">
         <button class="btn-register">⚡ REGISTER NOW</button>
@@ -881,9 +912,9 @@ footer {
   <div class="divider reveal"></div>
   <div class="news-filter reveal" id="newsFilter">
     <button class="news-filter-btn active" onclick="filterNews('all', this)">ALL</button>
-    <button class="news-filter-btn" onclick="filterNews('techcrunch', this)">TECHCRUNCH</button>
-    <button class="news-filter-btn" onclick="filterNews('verge', this)">THE VERGE</button>
-    <button class="news-filter-btn" onclick="filterNews('hackernews', this)">HACKER NEWS</button>
+    <button class="news-filter-btn" onclick="filterNews('technology', this)">TECHNOLOGY</button>
+    <button class="news-filter-btn" onclick="filterNews('science', this)">SCIENCE</button>
+    <button class="news-filter-btn" onclick="filterNews('world', this)">WORLD</button>
   </div>
   <div id="newsGrid" class="news-grid">
     <div class="news-loading">
@@ -1192,55 +1223,81 @@ function showToast(msg) {
 }
 
 // ═══════════════════════════════════════════════
-// TECH NEWS
+// EVENT COUNTDOWN
 // ═══════════════════════════════════════════════
+function startCountdown(targetDate, dId, hId, mId, sId, containerId) {
+  function tick() {
+    var now  = new Date().getTime();
+    var end  = new Date(targetDate).getTime();
+    var diff = end - now;
+    if (diff <= 0) {
+      document.getElementById(containerId).innerHTML = '<div class="countdown-expired">🎉 EVENT IS LIVE!</div>';
+      return;
+    }
+    var d = Math.floor(diff / (1000*60*60*24));
+    var h = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+    var m = Math.floor((diff % (1000*60*60)) / (1000*60));
+    var s = Math.floor((diff % (1000*60)) / 1000);
+    document.getElementById(dId).textContent = String(d).padStart(2,'0');
+    document.getElementById(hId).textContent = String(h).padStart(2,'0');
+    document.getElementById(mId).textContent = String(m).padStart(2,'0');
+    document.getElementById(sId).textContent = String(s).padStart(2,'0');
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+startCountdown('2026-05-11T10:00:00', 'cd1-d', 'cd1-h', 'cd1-m', 'cd1-s', 'countdown-1');
+
+// ═══════════════════════════════════════════════
+// TECH NEWS (GNews API)
+// ═══════════════════════════════════════════════
+var GNEWS_KEY    = '51ca8ed3e010994f19efa3881130c5cc';
 var allNewsItems = [];
 var activeFilter = 'all';
 
-var newsSources = [
-  { id:'techcrunch', label:'TECHCRUNCH', rss:'https://techcrunch.com/feed/', color:'source-techcrunch' },
-  { id:'verge',      label:'THE VERGE',  rss:'https://www.theverge.com/rss/index.xml', color:'source-verge' },
-  { id:'hackernews', label:'HACKER NEWS',rss:'https://hnrss.org/frontpage', color:'source-hackernews' }
+var newsTopics = [
+  { id:'technology', label:'TECHNOLOGY', color:'source-techcrunch' },
+  { id:'science',    label:'SCIENCE',    color:'source-verge' },
+  { id:'world',      label:'WORLD',      color:'source-hackernews' }
 ];
 
 function fetchNews() {
   allNewsItems = [];
   var done = 0;
-  newsSources.forEach(function(source) {
-    var url = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(source.rss) + '&count=6';
+  newsTopics.forEach(function(topic) {
+    var url = 'https://gnews.io/api/v4/top-headlines?topic=' + topic.id + '&lang=en&max=6&apikey=' + GNEWS_KEY;
     fetch(url)
       .then(function(r){ return r.json(); })
       .then(function(data) {
-        if (data.status === 'ok' && data.items) {
-          data.items.forEach(function(item) {
+        if (data.articles && data.articles.length) {
+          data.articles.forEach(function(article) {
             allNewsItems.push({
-              source:  source.id,
-              label:   source.label,
-              color:   source.color,
-              title:   item.title,
-              desc:    item.description ? item.description.replace(/<[^>]+>/g,'').substring(0,140)+'...' : '',
-              link:    item.link,
-              date:    item.pubDate ? new Date(item.pubDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''
+              source: topic.id,
+              label:  topic.label,
+              color:  topic.color,
+              title:  article.title,
+              desc:   article.description ? article.description.substring(0, 140) + '...' : '',
+              link:   article.url,
+              date:   article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''
             });
           });
         }
         done++;
-        if (done === newsSources.length) renderNews();
+        if (done === newsTopics.length) renderNews();
       })
       .catch(function() {
         done++;
-        if (done === newsSources.length) renderNews();
+        if (done === newsTopics.length) renderNews();
       });
   });
 }
 
 function renderNews() {
   var grid  = document.getElementById('newsGrid');
-  var items = activeFilter === 'all' ? allNewsItems : allNewsItems.filter(function(n){ return n.source === activeFilter; });
-  // Sort by recency (already ordered by source, just shuffle a bit to mix sources)
-  if (activeFilter === 'all') {
-    items = roundRobin(allNewsItems, newsSources.map(function(s){ return s.id; }));
-  }
+  var items = activeFilter === 'all'
+    ? roundRobin(allNewsItems, newsTopics.map(function(t){ return t.id; }))
+    : allNewsItems.filter(function(n){ return n.source === activeFilter; });
   if (!items.length) {
     grid.innerHTML = '<div class="news-error">⚡ COULD NOT LOAD NEWS · CHECK CONNECTION</div>';
     return;
@@ -1262,8 +1319,8 @@ function roundRobin(items, sourceIds) {
   sourceIds.forEach(function(id){ buckets[id] = []; });
   items.forEach(function(n){ if(buckets[n.source]) buckets[n.source].push(n); });
   var result = []; var maxLen = 0;
-  sourceIds.forEach(function(id){ if(buckets[id].length>maxLen) maxLen=buckets[id].length; });
-  for (var i=0;i<maxLen;i++) {
+  sourceIds.forEach(function(id){ if(buckets[id].length > maxLen) maxLen = buckets[id].length; });
+  for (var i = 0; i < maxLen; i++) {
     sourceIds.forEach(function(id){ if(buckets[id][i]) result.push(buckets[id][i]); });
   }
   return result;
@@ -1277,7 +1334,6 @@ function filterNews(source, btn) {
   setTimeout(renderNews, 200);
 }
 
-// Add news to navbar
 document.addEventListener('DOMContentLoaded', function() {
   fetchNews();
 });
@@ -1361,6 +1417,21 @@ document.addEventListener('keydown', function(e) {
     if (e.shiftKey && e.key === 'A') openAdminAuth();
   }
 });
+
+// ── SWIPE GESTURES ──
+var swipeStartX = 0;
+document.getElementById('photoViewer') && (function(){})(); // ensure DOM ready
+document.addEventListener('touchstart', function(e) {
+  if (document.getElementById('photoViewer').style.display === 'flex') {
+    swipeStartX = e.touches[0].clientX;
+  }
+}, { passive: true });
+document.addEventListener('touchend', function(e) {
+  if (document.getElementById('photoViewer').style.display === 'flex') {
+    var diff = swipeStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) { pvNav(diff > 0 ? 1 : -1); }
+  }
+}, { passive: true });
 
 // ── ADMIN AUTH ──
 function openAdminAuth() {
