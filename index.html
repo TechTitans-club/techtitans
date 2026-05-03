@@ -1250,45 +1250,46 @@ function startCountdown(targetDate, dId, hId, mId, sId, containerId) {
 startCountdown('2026-05-11T10:00:00', 'cd1-d', 'cd1-h', 'cd1-m', 'cd1-s', 'countdown-1');
 
 // ═══════════════════════════════════════════════
-// TECH NEWS (GNews API)
+// TECH NEWS (NewsData.io)
 // ═══════════════════════════════════════════════
-var GNEWS_KEY    = '51ca8ed3e010994f19efa3881130c5cc';
+var NEWSDATA_KEY = 'pub_ef589ee1049b4067a08ab409afe288cf';
 var allNewsItems = [];
 var activeFilter = 'all';
 
-var newsTopics = [
+var newsCategories = [
   { id:'technology', label:'TECHNOLOGY', color:'source-techcrunch' },
-  { id:'science',    label:'SCIENCE',    color:'source-verge' },
+  { id:'science',    label:'SCIENCE',    color:'source-verge'      },
   { id:'world',      label:'WORLD',      color:'source-hackernews' }
 ];
 
 function fetchNews() {
   allNewsItems = [];
   var done = 0;
-  newsTopics.forEach(function(topic) {
-    var url = 'https://gnews.io/api/v4/top-headlines?topic=' + topic.id + '&lang=en&max=6&apikey=' + GNEWS_KEY;
+  newsCategories.forEach(function(cat) {
+    var url = 'https://newsdata.io/api/1/news?apikey=' + NEWSDATA_KEY + '&category=' + cat.id + '&language=en&size=6';
     fetch(url)
       .then(function(r){ return r.json(); })
       .then(function(data) {
-        if (data.articles && data.articles.length) {
-          data.articles.forEach(function(article) {
+        if (data.status === 'success' && data.results) {
+          data.results.forEach(function(article) {
+            if (!article.title || !article.link) return;
             allNewsItems.push({
-              source: topic.id,
-              label:  topic.label,
-              color:  topic.color,
+              source: cat.id,
+              label:  cat.label,
+              color:  cat.color,
               title:  article.title,
-              desc:   article.description ? article.description.substring(0, 140) + '...' : '',
-              link:   article.url,
-              date:   article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''
+              desc:   article.description ? article.description.substring(0,140)+'...' : '',
+              link:   article.link,
+              date:   article.pubDate ? new Date(article.pubDate).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''
             });
           });
         }
         done++;
-        if (done === newsTopics.length) renderNews();
+        if (done === newsCategories.length) renderNews();
       })
       .catch(function() {
         done++;
-        if (done === newsTopics.length) renderNews();
+        if (done === newsCategories.length) renderNews();
       });
   });
 }
@@ -1296,7 +1297,7 @@ function fetchNews() {
 function renderNews() {
   var grid  = document.getElementById('newsGrid');
   var items = activeFilter === 'all'
-    ? roundRobin(allNewsItems, newsTopics.map(function(t){ return t.id; }))
+    ? roundRobin(allNewsItems, newsCategories.map(function(c){ return c.id; }))
     : allNewsItems.filter(function(n){ return n.source === activeFilter; });
   if (!items.length) {
     grid.innerHTML = '<div class="news-error">⚡ COULD NOT LOAD NEWS · CHECK CONNECTION</div>';
