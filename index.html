@@ -272,8 +272,10 @@ section {
   letter-spacing:1px; padding:4px 10px; border-radius:20px; margin-bottom:12px;
   border:1px solid; text-transform:uppercase;
 }
-.badge.upcoming { color:var(--accent3); border-color:rgba(52,211,153,0.3); background:rgba(52,211,153,0.07); }
-.badge.soon { color:#fbbf24; border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.07); }
+.badge.upcoming  { color:var(--accent3); border-color:rgba(52,211,153,0.3); background:rgba(52,211,153,0.07); }
+.badge.ongoing   { color:#fbbf24; border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.07); }
+.badge.ended     { color:#f87171; border-color:rgba(248,113,113,0.3); background:rgba(248,113,113,0.07); }
+.badge.soon      { color:#fbbf24; border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.07); }
 
 .btn-register {
   font-family:'DM Sans', sans-serif; font-size:0.82rem; font-weight:600;
@@ -853,7 +855,7 @@ footer {
   <div class="events-grid">
 
     <div class="event-card reveal">
-      <div class="badge upcoming">UPCOMING</div>
+      <div class="badge upcoming" id="eventBadge1">UPCOMING</div>
       <div class="event-date">📅 MAY 11, 2026 · 10:00 AM</div>
       <div class="event-title">TECHNOLOGY DAY 2026</div>
       <div class="event-desc">Celebrating the bridge between imagination and reality — honoring the innovators turning "what if" into "what is." A full day of demos, talks, and inspiration.</div>
@@ -867,9 +869,11 @@ footer {
         <div class="countdown-block"><span class="countdown-num" id="cd1-s">--</span><span class="countdown-label">SEC</span></div>
       </div>
       <div class="event-meta"><div>📍 <span>SEMINAR HALL</span></div><div>👥 <span></span></div></div>
-      <a href="https://forms.gle/rxpnDxwRYCucwZQx5" target="_blank" style="text-decoration:none;">
-        <button class="btn-register">⚡ REGISTER NOW</button>
-      </a>
+      <div id="regBtnWrap1">
+        <a href="https://forms.gle/rxpnDxwRYCucwZQx5" target="_blank" style="text-decoration:none;">
+          <button class="btn-register">⚡ REGISTER NOW</button>
+        </a>
+      </div>
     </div>
 
   </div>
@@ -884,7 +888,7 @@ footer {
     <div class="gallery-item reveal" onclick="openGalleryApp()"><div class="gallery-img"><div class="gallery-icon">🏆</div><div>ACHIEVEMENTS</div></div><div class="gallery-overlay"><p> IT Club Team Achievements 🏆 </div></div>
   </div>
   <div style="text-align:center; margin-top:36px;">
-    <a href="https://www.instagram.com/_it_club__?igsh=NnpiNnYwYzVnd2Zy" target="_blank" class="btn-instagram">
+    <a href="https://www.instagram.com/tech.titans_ribs?igsh" target="_blank" class="btn-instagram">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M7.75 2h8.5C19.99 2 22 4.01 22 6.75v8.5C22 17.99 19.99 20 16.25 20h-8.5C4.01 20 2 17.99 2 15.25v-8.5C2 4.01 4.01 2 7.75 2zm0 2C5.68 4 4 5.68 4 7.75v8.5C4 18.32 5.68 20 7.75 20h8.5c2.07 0 3.75-1.68 3.75-3.75v-8.5C20 5.68 18.32 4 16.25 4h-8.5zm8.75 2.5a1.25 1.25 0 110 2.5 1.25 1.25 0 010-2.5zM12 7a5 5 0 110 10 5 5 0 010-10zm0 2a3 3 0 100 6 3 3 0 000-6z"/></svg>
       FOLLOW US ON INSTAGRAM
     </a>
@@ -922,6 +926,7 @@ footer {
     <div class="member-card reveal"><div class="member-avatar">RL</div><div class="member-name">Roopesh</div><div class="member-role">SECRETARY</div></div>
     <div class="member-card reveal"><div class="member-avatar">SP</div><div class="member-name">Santhosh P</div><div class="member-role">IT SECRETARY</div></div>
     <div class="member-card tba reveal"><div class="member-avatar">?</div><div class="member-name">To Be Announced</div><div class="member-role">IT SECRETARY</div></div>
+    <div class="member-card reveal"><div class="member-avatar">DK</div><div class="member-name">Diganth K Gowda</div><div class="member-role">DISCIPLINE SEC.</div></div>
     <div class="member-card reveal"><div class="member-avatar">RR</div><div class="member-name">Rashmi R</div><div class="member-role">DISCIPLINE SEC.</div></div>
     <div class="member-card reveal"><div class="member-avatar">MS</div><div class="member-name">Mohammad Sameer</div><div class="member-role">DESIGNING.</div></div>
     <div class="member-card tba reveal"><div class="member-avatar">?</div><div class="member-name">To Be Announced</div><div class="member-role">EVENT COORDINATOR</div></div>
@@ -1230,29 +1235,61 @@ function showToast(msg) {
 // ═══════════════════════════════════════════════
 // EVENT COUNTDOWN
 // ═══════════════════════════════════════════════
-function startCountdown(targetDate, dId, hId, mId, sId, containerId) {
+function startCountdown(startISO, durationHours, dId, hId, mId, sId, countdownId, badgeId, regWrapId) {
+  var startTime = new Date(startISO).getTime();
+  var endTime   = startTime + (durationHours * 60 * 60 * 1000);
+
   function tick() {
-    var now  = new Date().getTime();
-    var end  = new Date(targetDate).getTime();
-    var diff = end - now;
-    if (diff <= 0) {
-      document.getElementById(containerId).innerHTML = '<div class="countdown-expired">🎉 EVENT IS LIVE!</div>';
+    var now  = Date.now();
+    var diff = startTime - now;
+    var badge   = document.getElementById(badgeId);
+    var regWrap = document.getElementById(regWrapId);
+
+    // ── UPCOMING ──
+    if (diff > 0) {
+      badge.textContent = 'UPCOMING';
+      badge.className   = 'badge upcoming';
+
+      // Close registration on the day of the event
+      var startDate = new Date(startISO);
+      var nowDate   = new Date();
+      if (nowDate.toDateString() === startDate.toDateString()) {
+        regWrap.innerHTML = '<button class="btn-register" disabled style="opacity:0.4;cursor:not-allowed;">🔒 REGISTRATIONS CLOSED</button>';
+      }
+
+      var d = Math.floor(diff / (1000*60*60*24));
+      var h = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+      var m = Math.floor((diff % (1000*60*60)) / (1000*60));
+      var s = Math.floor((diff % (1000*60)) / 1000);
+      document.getElementById(dId).textContent = String(d).padStart(2,'0');
+      document.getElementById(hId).textContent = String(h).padStart(2,'0');
+      document.getElementById(mId).textContent = String(m).padStart(2,'0');
+      document.getElementById(sId).textContent = String(s).padStart(2,'0');
+
+    // ── ONGOING (event started, not yet ended) ──
+    } else if (now < endTime) {
+      badge.textContent = '🟢 ONGOING';
+      badge.className   = 'badge ongoing';
+      regWrap.innerHTML = '<button class="btn-register" disabled style="opacity:0.4;cursor:not-allowed;">🔒 REGISTRATIONS CLOSED</button>';
+      document.getElementById(countdownId).innerHTML = '<div class="countdown-expired">🎉 EVENT IS LIVE!</div>';
+      return;
+
+    // ── ENDED ──
+    } else {
+      badge.textContent = 'ENDED';
+      badge.className   = 'badge ended';
+      regWrap.innerHTML = '<button class="btn-register" disabled style="opacity:0.4;cursor:not-allowed;">🔒 REGISTRATIONS CLOSED</button>';
+      document.getElementById(countdownId).innerHTML = '<div class="countdown-expired" style="color:#f87171;">✅ EVENT ENDED</div>';
       return;
     }
-    var d = Math.floor(diff / (1000*60*60*24));
-    var h = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
-    var m = Math.floor((diff % (1000*60*60)) / (1000*60));
-    var s = Math.floor((diff % (1000*60)) / 1000);
-    document.getElementById(dId).textContent = String(d).padStart(2,'0');
-    document.getElementById(hId).textContent = String(h).padStart(2,'0');
-    document.getElementById(mId).textContent = String(m).padStart(2,'0');
-    document.getElementById(sId).textContent = String(s).padStart(2,'0');
   }
+
   tick();
   setInterval(tick, 1000);
 }
 
-startCountdown('2026-05-11T10:00:00', 'cd1-d', 'cd1-h', 'cd1-m', 'cd1-s', 'countdown-1');
+// startISO, durationHours, day, hr, min, sec IDs, countdown ID, badge ID, reg wrap ID
+startCountdown('2026-05-11T10:00:00', 5, 'cd1-d', 'cd1-h', 'cd1-m', 'cd1-s', 'countdown-1', 'eventBadge1', 'regBtnWrap1');
 
 // ═══════════════════════════════════════════════
 // TECH NEWS (NewsData.io)
@@ -1369,6 +1406,7 @@ async function loadPhotosFromSupabase() {
   grid.style.display = 'grid';
   grid.style.gridTemplateColumns = 'repeat(3,1fr)';
   grid.style.gap = '3px';
+  grid.style.alignContent = 'start';
   grid.innerHTML = '<div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;padding:60px;"><div class="news-spinner"></div></div>';
   empty.style.display = 'none';
 
@@ -1381,7 +1419,7 @@ async function loadPhotosFromSupabase() {
   window._galleryPhotos = result.data;
   var html = '';
   result.data.forEach(function(p, i) {
-    html += '<div onclick="openPhotoViewer('+i+')" style="aspect-ratio:1;overflow:hidden;cursor:pointer;background:#0d1225;">'
+    html += '<div onclick="openPhotoViewer('+i+')" style="aspect-ratio:1;overflow:hidden;cursor:pointer;background:#0d1225;flex-shrink:0;">'
           + '<img src="'+p.url+'" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.2s;" onmouseover="this.style.transform=\'scale(1.04)\'" onmouseout="this.style.transform=\'scale(1)\'">'
           + '</div>';
   });
@@ -1523,7 +1561,7 @@ async function renderUploadedGrid() {
   </div>
 
   <!-- Photo grid -->
-  <div id="appPhotoGrid" style="flex:1;overflow-y:auto;padding:3px;">
+  <div id="appPhotoGrid" style="flex:1;overflow-y:auto;padding:3px;align-content:start;">
     <!-- populated by JS -->
   </div>
 
